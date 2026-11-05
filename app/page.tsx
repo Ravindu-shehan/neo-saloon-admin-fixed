@@ -15,17 +15,31 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { toast } from "react-hot-toast/headless";
 import axios from "axios";
+import api from "@/lib/api";
 
 export default function Home() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  function handleLogin(){
-        axios.post("http://localhost:3000/api/auth",{
-          email: email,
-          password: password
-        })
+  async function handleLogin(){
+        //const response = await axios.post("http://localhost:3000/api/auth",{
+          //email: email,
+          //password: password
+        //})
+        try{
+          const response = await api.post("/api/auth",
+            {
+              email : email,
+              password : password
+            }
+          )
+
+        }catch(error){
+          toast.error("Invalid Credentials")
+        }
+        
+        
   }
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
