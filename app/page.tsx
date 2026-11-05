@@ -1,3 +1,4 @@
+"use client";
 import {
   Card,
   CardHeader,
@@ -11,8 +12,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { toast } from "react-hot-toast/headless";
+import axios from "axios";
 
 export default function Home() {
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  function handleLogin(){
+        axios.post("http://localhost:3000/api/auth",{
+          email: email,
+          password: password
+        })
+  }
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="w-full max-w-md px-6">
@@ -39,6 +53,8 @@ export default function Home() {
                     type="email"
                     placeholder="m@example.com"
                     required
+                    value = {email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
 
@@ -58,6 +74,8 @@ export default function Home() {
                     id="password"
                     type="password"
                     required
+                    value = {password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
               </div>
@@ -65,7 +83,8 @@ export default function Home() {
           </CardContent>
 
           <CardFooter className="flex-col gap-2">
-            <Button type="submit" form="login-form" className="w-full">
+            <Button type="submit" form="login-form" className="w-full"
+            onClick={handleLogin}>
               Login
             </Button>
 
