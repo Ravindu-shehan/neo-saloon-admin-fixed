@@ -13,7 +13,8 @@ api.interceptors.response.use(
         return response
     },
     (error)=>{
-        toast.error("Error in API request")
+        console.log(error.response)
+        toast.error(error.response?.data?.message || "something went wrong")
         return Promise.reject(error)
     }
 )

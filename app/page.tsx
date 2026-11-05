@@ -35,6 +35,8 @@ export default function Home() {
             }
           )
 
+          window.location.href = "/dashboard"
+
         }catch(error){
           toast.error("Invalid Credentials")
         }
