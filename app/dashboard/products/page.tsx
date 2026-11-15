@@ -17,6 +17,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 // Product Type
 interface Product {
@@ -195,6 +204,30 @@ function ProductsContent() {
           </TableBody>
         </Table>
       </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious href="#" />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="/dashboard/products?pageSize=10&pageNumber=1">1</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="/dashboard/products?pageSize=10&pageNumber=2" isActive>
+                  2
+               </PaginationLink>          
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="/dashboard/products?pageSize=10&pageNumber=3">3</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext href="#" />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
 
       {/* Pagination */}
       <nav aria-label="Product pages" className="flex justify-center">
