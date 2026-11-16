@@ -1,308 +1,314 @@
-
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Fragment, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-
 import api from "@/lib/api";
-
+import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+	Table,
+	TableBody,
+	TableCaption,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
 } from "@/components/ui/table";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
 
-// Product Type
-interface Product {
-  id: string;
-  sku: string;
-  name: string;
-  stock: number;
-  status: string;
-  price: number;
-  compareAt?: number | null;
-  brand?: string | null;
-  model?: string | null;
-  media?: {
-    url: string;
-  }[];
-}
+type Product = {
+	id: string | number;
+	sku: string;
+	name: string;
+	stock: number;
+	status: string;
+	price: number;
+	compareAt?: number | null;
+	brand?: string;
+	model?: string;
+	media?: { url: string }[];
+};
 
-interface Pagination {
-  pageNumber: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-}
+type PaginationInfo = {
+	pageNumber: number;
+	pageSize: number;
+	totalCount: number;
+	totalPages: number;
+};
 
-interface ProductsResponse {
-  products: Product[];
-  pagination: Pagination;
-}
+type ProductsResponse = {
+	products: Product[];
+	pagination: PaginationInfo;
+};
 
-// Main Page Component
-export default function ProductsPage() {
-  return (
-    <Suspense fallback={<div className="p-5">Loading products...</div>}>
-      <ProductsContent />
-    </Suspense>
-  );
-}
+const headers = [
+	"SKU",
+	"Name",
+	"Stock",
+	"Status",
+	"Price",
+	"Compare At",
+	"Brand",
+	"Model",
+	"Actions",
+];
 
-// Products Component
 function ProductsContent() {
-  const parameters = useSearchParams();
+	const searchParams = useSearchParams();
+	const currentPage = Math.max(1, Number(searchParams.get("pageNumber")) || 1);
+	const pageSize = Math.max(1, Number(searchParams.get("pageSize")) || 10);
 
-  const pageParam = Number(parameters.get("pageNumber"));
-  const sizeParam = Number(parameters.get("pageSize"));
+	const [products, setProducts] = useState<Product[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [pagination, setPagination] = useState<PaginationInfo>({
+		pageNumber: currentPage,
+		pageSize,
+		totalCount: 0,
+		totalPages: 0,
+	});
 
-  const currentPage =
-    Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
+	useEffect(() => {
+		let cancelled = false;
 
-  const pageSize =
-    Number.isInteger(sizeParam) && sizeParam > 0 ? sizeParam : 10;
+		const fetchProducts = async () => {
+			try {
+				setLoading(true);
+				setError(null);
 
-  const [products, setProducts] = useState<Product[]>([]);
+				// Path must match your rewrite: /backend-api/* -> backend
+				const res = await api.get<ProductsResponse>("/products", {
+					params: { pageNumber: currentPage, pageSize },
+				});
 
-  const [pagination, setPagination] = useState<Pagination>({
-    pageNumber: currentPage,
-    pageSize,
-    totalCount: 0,
-    totalPages: 0,
-  });
+				if (cancelled) return;
+				setProducts(res.data.products ?? []);
+				setPagination(res.data.pagination);
+			} catch (err) {
+				if (cancelled) return;
+				console.error("Failed to fetch products:", err);
+				setProducts([]);
+				setError("Could not load products. Please try again.");
+				toast.error("Failed to load products");
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		};
 
-  const [loading, setLoading] = useState(true);
+		fetchProducts();
+		return () => {
+			cancelled = true;
+		};
+	}, [currentPage, pageSize]);
 
-  // Fetch Products
-  useEffect(() => {
-    let cancelled = false;
+	const pageHref = (pageNumber: number) =>
+		`/dashboard/products?pageSize=${pageSize}&pageNumber=${pageNumber}`;
 
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
+	const visiblePages = Array.from(
+		{ length: pagination.totalPages },
+		(_, index) => index + 1,
+	).filter(
+		(page) =>
+			page === 1 ||
+			page === pagination.totalPages ||
+			Math.abs(page - currentPage) <= 1,
+	);
 
-        const res = await api.get<ProductsResponse>("/products", {
-          params: {
-            pageNumber: currentPage,
-            pageSize,
-          },
-        });
+	const prevDisabled = currentPage <= 1;
+	const nextDisabled =
+		pagination.totalPages === 0 || currentPage >= pagination.totalPages;
 
-        if (cancelled) return;
+	return (
+		<div className="flex min-h-full w-full flex-col gap-5 overflow-x-hidden p-2 sm:p-4">
+			<div className="w-full rounded-xl border bg-background p-4 sm:p-6">
+				<div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+					<div className="space-y-1">
+						<h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+							Products
+						</h1>
+						<p className="text-sm text-muted-foreground">
+							Manage your products, inventory, pricing and product details.
+						</p>
+					</div>
 
-        setProducts(res.data.products ?? []);
-        setPagination(res.data.pagination);
-      } catch (error) {
-        if (!cancelled) {
-          console.error("Failed to fetch products:", error);
-          toast.error("Failed to load products");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+						<div className="rounded-lg border bg-muted/30 px-4 py-2">
+							<p className="text-xs font-medium text-muted-foreground">
+								Total Products
+							</p>
+							<p className="text-xl font-bold">{pagination.totalCount}</p>
+						</div>
 
-    fetchProducts();
+						<div className="rounded-lg border bg-muted/30 px-4 py-2">
+							<p className="text-xs font-medium text-muted-foreground">
+								Current Page
+							</p>
+							<p className="text-xl font-bold">
+								{pagination.totalPages === 0
+									? "0 / 0"
+									: `${currentPage} / ${pagination.totalPages}`}
+							</p>
+						</div>
 
-    return () => {
-      cancelled = true;
-    };
-  }, [currentPage, pageSize]);
+						<Link
+							href="/dashboard/products/add-product"
+							className="w-full sm:w-auto"
+						>
+							<Button className="w-full gap-2">
+								<span className="text-lg">+</span>
+								Add Product
+							</Button>
+						</Link>
+					</div>
+				</div>
+			</div>
 
-  // Generate Page URL
-  const pageHref = (pageNumber: number) =>
-    `/dashboard/products?pageSize=${pageSize}&pageNumber=${pageNumber}`;
+			<div className="w-full max-w-full overflow-x-auto rounded-lg border bg-background">
+				<Table className="min-w-[1000px]">
+					<TableCaption className="py-4 text-sm text-muted-foreground">
+						A list of your products.
+					</TableCaption>
+					<TableHeader className="bg-muted/50">
+						<TableRow className="hover:bg-muted/50">
+							<TableHead className="w-20" />
+							{headers.map((h) => (
+								<TableHead
+									key={h}
+									className="text-xs font-semibold uppercase tracking-wide"
+								>
+									{h}
+								</TableHead>
+							))}
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{loading ? (
+							<TableRow>
+								<TableCell
+									colSpan={headers.length + 1}
+									className="py-10 text-center text-muted-foreground"
+								>
+									Loading products...
+								</TableCell>
+							</TableRow>
+						) : error ? (
+							<TableRow>
+								<TableCell
+									colSpan={headers.length + 1}
+									className="py-10 text-center text-destructive"
+								>
+									{error}
+								</TableCell>
+							</TableRow>
+						) : products.length === 0 ? (
+							<TableRow>
+								<TableCell
+									colSpan={headers.length + 1}
+									className="py-10 text-center text-muted-foreground"
+								>
+									No products found on this page.
+								</TableCell>
+							</TableRow>
+						) : (
+							products.map((item) => {
+								const image = item.media?.[0]?.url;
+								return (
+									<TableRow
+										key={item.id}
+										className="transition-colors hover:bg-muted/40"
+									>
+										<TableCell className="py-3">
+											{image ? (
+												// eslint-disable-next-line @next/next/no-img-element
+												<img
+													src={image}
+													alt={item.name}
+													className="aspect-square w-12 rounded-md border object-cover"
+												/>
+											) : (
+												<div className="aspect-square w-12 rounded-md border bg-muted" />
+											)}
+										</TableCell>
+										<TableCell className="whitespace-nowrap font-mono text-sm">
+											{item.sku}
+										</TableCell>
+										<TableCell className="font-medium">{item.name}</TableCell>
+										<TableCell>{item.stock}</TableCell>
+										<TableCell>{item.status}</TableCell>
+										<TableCell>{item.price}</TableCell>
+										<TableCell>{item.compareAt ?? "-"}</TableCell>
+										<TableCell>{item.brand ?? "-"}</TableCell>
+										<TableCell>{item.model ?? "-"}</TableCell>
+										<TableCell />
+									</TableRow>
+								);
+							})
+						)}
+					</TableBody>
+				</Table>
+			</div>
 
-  // Generate Visible Pages
-  const visiblePages = Array.from(
-    { length: pagination.totalPages },
-    (_, index) => index + 1
-  ).filter(
-    (page) =>
-      page === 1 ||
-      page === pagination.totalPages ||
-      Math.abs(page - currentPage) <= 1
-  );
+			<Pagination>
+				<PaginationContent>
+					<PaginationItem>
+						<PaginationPrevious
+							href={pageHref(Math.max(1, currentPage - 1))}
+							aria-disabled={prevDisabled}
+							tabIndex={prevDisabled ? -1 : undefined}
+							className={
+								prevDisabled ? "pointer-events-none opacity-50" : undefined
+							}
+						/>
+					</PaginationItem>
 
-  if (loading) {
-    return <div className="p-5">Loading products...</div>;
-  }
+					{visiblePages.map((page, index) => (
+						<Fragment key={page}>
+							{index > 0 && page - visiblePages[index - 1] > 1 && (
+								<PaginationItem>
+									<PaginationEllipsis />
+								</PaginationItem>
+							)}
+							<PaginationItem>
+								<PaginationLink
+									href={pageHref(page)}
+									isActive={page === currentPage}
+									aria-current={page === currentPage ? "page" : undefined}
+								>
+									{page}
+								</PaginationLink>
+							</PaginationItem>
+						</Fragment>
+					))}
 
-  return (
-    <div className="w-full h-full space-y-5">
-      <div className="w-full overflow-x-auto rounded-lg border bg-background">
-        <Table className="min-w-[1100px]">
-          <TableCaption className="py-4 text-sm text-muted-foreground">
-            A list of your recent products.
-          </TableCaption>
+					<PaginationItem>
+						<PaginationNext
+							href={pageHref(Math.min(pagination.totalPages, currentPage + 1))}
+							aria-disabled={nextDisabled}
+							tabIndex={nextDisabled ? -1 : undefined}
+							className={
+								nextDisabled ? "pointer-events-none opacity-50" : undefined
+							}
+						/>
+					</PaginationItem>
+				</PaginationContent>
+			</Pagination>
+		</div>
+	);
+}
 
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="w-20"></TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Compare At</TableHead>
-              <TableHead>Brand</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {products.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center py-8">
-                  No products found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              products.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="py-3">
-                    <img
-                      src={
-                        item.media?.[0]?.url ??
-                        "/images/default-product.png"
-                      }
-                      alt={item.name}
-                      className="aspect-square w-12 rounded-md border object-cover"
-                    />
-                  </TableCell>
-
-                  <TableCell>{item.sku}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.stock}</TableCell>
-                  <TableCell>{item.status}</TableCell>
-                  <TableCell>{item.price}</TableCell>
-                  <TableCell>{item.compareAt ?? "-"}</TableCell>
-                  <TableCell>{item.brand ?? "-"}</TableCell>
-                  <TableCell>{item.model ?? "-"}</TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious href="#" />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="/dashboard/products?pageSize=10&pageNumber=1">1</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="/dashboard/products?pageSize=10&pageNumber=2" isActive>
-                  2
-               </PaginationLink>          
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="/dashboard/products?pageSize=10&pageNumber=3">3</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationEllipsis />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext href="#" />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-
-      {/* Pagination */}
-      <nav aria-label="Product pages" className="flex justify-center">
-        <ul className="flex items-center gap-1">
-          <li>
-            <Link
-              href={pageHref(Math.max(1, currentPage - 1))}
-              aria-disabled={currentPage <= 1}
-              tabIndex={currentPage <= 1 ? -1 : undefined}
-              className={`inline-flex h-9 items-center rounded-md px-3 text-sm hover:bg-muted ${
-                currentPage <= 1
-                  ? "pointer-events-none opacity-50"
-                  : ""
-              }`}
-            >
-              Previous
-            </Link>
-          </li>
-
-          {visiblePages.map((page, index) => (
-            <li key={page}>
-              {index > 0 &&
-                page - visiblePages[index - 1] > 1 && (
-                  <span className="px-2 text-muted-foreground">
-                    ...
-                  </span>
-                )}
-
-              <Link
-                href={pageHref(page)}
-                aria-current={page === currentPage ? "page" : undefined}
-                className={`inline-flex h-9 min-w-9 items-center justify-center rounded-md px-3 text-sm hover:bg-muted ${
-                  page === currentPage
-                    ? "border bg-background"
-                    : ""
-                }`}
-              >
-                {page}
-              </Link>
-            </li>
-          ))}
-
-          <li>
-            <Link
-              href={pageHref(
-                Math.max(
-                  1,
-                  Math.min(
-                    pagination.totalPages || 1,
-                    currentPage + 1
-                  )
-                )
-              )}
-              aria-disabled={
-                pagination.totalPages === 0 ||
-                currentPage >= pagination.totalPages
-              }
-              tabIndex={
-                pagination.totalPages === 0 ||
-                currentPage >= pagination.totalPages
-                  ? -1
-                  : undefined
-              }
-              className={`inline-flex h-9 items-center rounded-md px-3 text-sm hover:bg-muted ${
-                pagination.totalPages === 0 ||
-                currentPage >= pagination.totalPages
-                  ? "pointer-events-none opacity-50"
-                  : ""
-              }`}
-            >
-              Next
-            </Link>
-          </li>
-        </ul>
-      </nav>
-    </div>
-  );
+export default function ProductsPage() {
+	return (
+		<Suspense fallback={<div className="p-6">Loading...</div>}>
+			<ProductsContent />
+		</Suspense>
+	);
 }

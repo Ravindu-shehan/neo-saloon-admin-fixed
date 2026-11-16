@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
@@ -10,10 +9,13 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log(error.response);
+    console.log("API Error:", error.response?.data);
+    console.log("Status:", error.response?.status);
+
     toast.error(
       error.response?.data?.message || "Something went wrong"
     );
+
     return Promise.reject(error);
   }
 );
