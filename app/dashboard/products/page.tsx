@@ -96,7 +96,7 @@ function ProductsContent() {
       try {
         setLoading(true);
 
-        const res = await api.get<ProductsResponse>("/api/products", {
+        const res = await api.get<ProductsResponse>("/products", {
           params: {
             pageNumber: currentPage,
             pageSize,
