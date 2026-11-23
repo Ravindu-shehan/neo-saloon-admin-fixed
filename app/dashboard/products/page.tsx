@@ -24,6 +24,7 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Pen } from "lucide-react";
 
 type Product = {
 	id: string | number;
@@ -248,7 +249,13 @@ function ProductsContent() {
 										<TableCell>{item.compareAt ?? "-"}</TableCell>
 										<TableCell>{item.brand ?? "-"}</TableCell>
 										<TableCell>{item.model ?? "-"}</TableCell>
-										<TableCell />
+										<TableCell >
+											<div className="">
+												<Link href={`/dashboard/products/edit-product?productId=${item.sku}`}>
+													<Pen/>
+												</Link>
+											</div>
+										</TableCell>
 									</TableRow>
 								);
 							})
