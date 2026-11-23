@@ -173,7 +173,7 @@ function ProductsContent() {
 			</div>
 
 			<div className="w-full max-w-full overflow-x-auto rounded-lg border bg-background">
-				<Table className="min-w-[1000px]">
+				<Table className="min-w-250">
 					<TableCaption className="py-4 text-sm text-muted-foreground">
 						A list of your products.
 					</TableCaption>
@@ -305,7 +305,7 @@ function ProductsContent() {
 	);
 }
 
-export default function ProductsPage() {
+export default function ProductsPageWrapper() {
 	return (
 		<Suspense fallback={<div className="p-6">Loading...</div>}>
 			<ProductsContent />
