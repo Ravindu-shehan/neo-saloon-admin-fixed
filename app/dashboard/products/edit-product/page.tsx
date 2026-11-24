@@ -9,7 +9,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { useEffect } from "react";
 import toast from "react-hot-toast";
+import { Suspense } from "react";
 
 export default function AddProductPage() {
     const router = useRouter()
@@ -35,6 +37,29 @@ export default function AddProductPage() {
             type: "VIDEO",
         },
     ]);
+
+    useEffect(()=>{
+        api.get("/api/products/byId",{
+            params : {
+                id: parameters.get("productId")
+            }
+        }).then((res)=>{
+            console.log(res.data)
+            setSKU(res.data.sku)
+            setName(res.data.name)
+            setAltNames(res.data.altNames)
+            setDescription(res.data.description)
+            setStock(res.data.stock.toString())
+            setStatus(res.data.status)
+            setPrice(res.data.price.toString())
+            setCompareAtPrice(res.data.compareAt.toString())
+            setBrand(res.data.brand)
+            setModel(res.data.model)
+            setMedia(res.data.media)
+            
+        })
+
+    })
 
     async function addProduct() {
 
