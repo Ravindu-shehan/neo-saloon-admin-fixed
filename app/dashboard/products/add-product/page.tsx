@@ -59,7 +59,7 @@ export default function AddProductPage() {
                 media : media
             }
 
-            await api.post("/api/products", productData)
+            await api.put("/api/products", productData)
 
             toast.success("Product added successfully!")
 
